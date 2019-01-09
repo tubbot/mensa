@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/tubbot/mensa/issues"
   },
-  "homepage": "https://github.com/tubbot/mensa#readme"
+  "homepage": "https://github.com/tubbot/mensa#readme",
+  "dependencies": {
+    "dotenv": "^6.2.0"
+  }
 }
