@@ -1,0 +1,22 @@
+{
+  "name": "mensa",
+  "version": "0.0.1",
+  "description": "TU Berlin Mensa Chatbot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Hello World!\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tubbot/mensa.git"
+  },
+  "keywords": [
+    "chatbot"
+  ],
+  "author": "David Rosson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tubbot/mensa/issues"
+  },
+  "homepage": "https://github.com/tubbot/mensa#readme"
+}
