@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/tubbot/mensa#readme",
   "dependencies": {
-    "dotenv": "^6.2.0"
+    "dotenv": "^6.2.0",
+    "telegraf": "^3.25.5"
   }
 }
