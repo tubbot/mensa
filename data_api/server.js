@@ -9,7 +9,7 @@ app.get('/mensas', (req, res) => {
   return res.json(MENSAS);
 });
 
-app.get('/menu/:mensaId', (req, res) => {
+app.get('/menus/:mensaId', (req, res) => {
   var menus = getMenus(req.params.mensaId);
   if (!menus) {
     return res.send('Error: No menus found.');
