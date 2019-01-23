@@ -12,7 +12,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.start((ctx) => ctx.reply('Welcome'));
 
 bot.hears(/(hi|hello|hey).?$/i, ctx => {
-  ctx.reply('Hey there!');
+  ctx.reply(`Hi, ${ctx.from.first_name || ctx.from.username}!`);
 });
 
 bot.hears(/where|location|address/i, ctx => {
