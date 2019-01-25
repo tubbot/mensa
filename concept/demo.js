@@ -193,7 +193,11 @@ bot.hears(/for lunch/i, ctx => {
   showMenu(ctx);
 });
 
-bot.hears(/(another|different|change|choose|show) mensa/i, ctx => {
+bot.hears(/change.*diet/i, ctx => {
+  promptDietSelection(ctx);
+});
+
+bot.hears(/(another|different|change|choose|show).*mensa/i, ctx => {
   promptMensaSelection(ctx);
 });
 
