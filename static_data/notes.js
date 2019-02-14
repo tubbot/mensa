@@ -60,6 +60,14 @@ NOTES.DIETS = {
   'grün (Ampel)': `"Greenlight"`,
 };
 
+NOTES.MENU_HEADINGS = {
+  'Essen': '🥘 *Mains*',
+  'Beilagen': '🍚 *Sides*',
+  'Suppen': '🍲 *Soups*',
+  'Salate': '🥗 *Salads*',
+  'Desserts': '🍰 *Desserts*',
+};
+
 const FADS = [
   'Antioxidationsmittel',
   'Klimaessen',

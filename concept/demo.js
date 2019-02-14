@@ -9,7 +9,7 @@ const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
 
 const MESSAGES = require('./messages');
-const NOTES = require('./notes');
+const NOTES = require('../static_data/notes');
 
 const dataService = require('./data_service');
 const helpers = require('./helpers');
