@@ -22,7 +22,7 @@ app.post('/mensas-list', (req, res) => {
     var userLocation = params.coordinates || null;
     var mensas = DATA.MENSAS;
     if (userLocation) {
-      mensas = helpers.addDistanceField(userLocation, _.clone(mensas))
+      mensas = helpers.addDistanceField(userLocation, _.clone(mensas));
       mensas = _.sortBy(mensas, 'distance');
     }
     res.json(mensas);
@@ -115,11 +115,7 @@ app.post('/hours', (req, res) => {
   return;
 });
 
-
-
 app.listen(DATA_API_PORT);
-
-
 
 // greeting
 // try_again
