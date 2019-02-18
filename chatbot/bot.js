@@ -46,6 +46,7 @@ bot.on('location', ctx => {
 });
 
 // mensa_nearest
+// recalculate in case the user locaiton has changed
 bot.command('nearest', ctx => {
   var user = getUser(ctx);
   return handlers.nearest(ctx, user);
@@ -91,6 +92,9 @@ bot.command('hours', ctx => {
 // haz_list
 // haz_add
 // haz_drop
+
+// SET ROLE e.g. student vs. employee
+
 
 
 // Start bot server
