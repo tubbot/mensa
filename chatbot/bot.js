@@ -14,6 +14,9 @@ const NOTES = require('../static_data/notes');
 const helpers = require('./helpers');
 const dataService = require('./bot_data_service');
 const handlers = require('./handlers');
+// DialogFlow wrapper
+const resolveIntent = require('./intent');
+
 /// SESSION MANAGEMENT ///
 const USERS = {};
 const getUser = ctx => {
@@ -28,8 +31,43 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 bot.start(ctx => ctx.reply(MESSAGES.WELCOME));
 
+const dispatchIntent = (parsed, ctx) => {
+  var intent = parsed.intent;
+  var entities = parsed.entities;
+  var user = getUser(ctx);
+  if (intent === "try_again") {
+    return handlers.try_again(ctx, user);
+  }
+  if (intent === "greeting") {
+    return handlers.greeting(ctx);
+  }
+  if (intent === "mensas_list") {
+    return handlers.mensa_list(ctx, user);
+  }
+  if (intent === "mensa_set") {
+    return handlers.select_mensa(ctx, user, entities);
+  }
+  if (intent === "show_menu") {
+    return handlers.show_menu(ctx, user, entities);
+  }
+};
+
+// Universal Dispatcher //
+bot.hears(/.?/i, ctx => {
+  var userText = ctx.message.text;
+  return resolveIntent(userText)
+  .catch(error => {
+    console.log(error);
+  }).then(result => {
+    try {
+      return dispatchIntent(result, ctx);
+    }
+    catch (error) {}
+  });
+});
+
 // greeting
-bot.hears(/(hi|hello|hey).?$/i, handlers.greeting);
+// bot.hears(/(hi|hello|hey).?$/i, handlers.greeting);
 
 // try_again
 bot.command('gibberish', handlers.try_again);

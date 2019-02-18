@@ -110,17 +110,26 @@ const showSelectedMensa = (ctx, user) => {
   });
 };
 
-const selectMensa = (ctx, user) => {
+const selectMensa = (ctx, user, entities) => {
+  var mensaId = Number(_.get(entities, 'mensa_name.stringValue'));
+  if (mensaId) {
+    return setMensaId(ctx, user, mensaId);
+  }
   return getMensaKeys(user).then(keys => {
     ctx.reply(MESSAGES.MENSA_SELECTION_PROMPT, keys);
   });
 };
 
-const setMensaId = (ctx, user) => {
+const setMensaId = (ctx, user, mensaId) => {
   return getMensas(user).then(mensas => {
-    var mensaId = Number(ctx.match[1]);
+    if (!mensaId) {
+      mensaId = Number(ctx.match[1]);
+    }
     user.mensaId = mensaId;
     var mensa = _.find(mensas, { id: mensaId });
+    if (!mensa) {
+      return;
+    }
     var message = MESSAGES.MENSA_CONFIRMATION + '*' + mensa.name + '*';
     return ctx.replyWithMarkdown(message);
   });
@@ -169,15 +178,22 @@ const showMenuItems = (ctx, mensa, menu, date) => {
 };
 
 
-const showMenu = (ctx, user) => {
+const showMenu = (ctx, user, entities) => {
+  var mensaId = Number(_.get(entities, 'mensa_name.stringValue'));
+  // Temporary fix...
+  if (mensaId) {
+    user.mensaId = mensaId;
+  }
   return getSelectedMensa(ctx, user).then(mensa => {
     if (!mensa) {
       return;
     }
     var mensaId = mensa.id;
-    ///
-    var date = moment().format('YYYY-MM-DD');
-    ///
+
+    var dateString = _.get(entities, 'date.stringValue');
+    var userDate = dateString ? moment(dateString).format('YYYY-MM-DD') : null;
+    var today = moment().format('YYYY-MM-DD');
+    var date = userDate || today;
     return dataService.getMenu(mensaId, date).then(menu => {
       if (!menu) {
         return ctx.reply("No menu to show.");
