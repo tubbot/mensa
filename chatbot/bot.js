@@ -35,6 +35,7 @@ const dispatchIntent = (parsed, ctx) => {
   var intent = parsed.intent;
   var entities = parsed.entities;
   var user = getUser(ctx);
+  console.log('Intent: '+ intent);
   if (intent === "try_again") {
     return handlers.try_again(ctx, user);
   }
@@ -44,11 +45,32 @@ const dispatchIntent = (parsed, ctx) => {
   if (intent === "mensas_list") {
     return handlers.mensa_list(ctx, user);
   }
+  if (intent === "mensa_nearest") {
+    return handlers.nearest(ctx, user);
+  }
   if (intent === "mensa_set") {
     return handlers.select_mensa(ctx, user, entities);
   }
+  if (intent === "mensa_address") {
+    return handlers.show_address(ctx, user, entities);
+  }
   if (intent === "show_menu") {
     return handlers.show_menu(ctx, user, entities);
+  }
+  if (intent === "hours_open") {
+    return handlers.show_hours(ctx, user, entities, 'open');
+  }
+  if (intent === "hours_close") {
+    return handlers.show_hours(ctx, user, entities, 'close');
+  }
+  if (intent === "is_open") {
+    return handlers.show_hours(ctx, user, entities, 'is');
+  }
+  if (intent === "diet_set") {
+    return handlers.set_diet(ctx, user, entities);
+  }
+  if (intent === "menu_by_diet") {
+    return handlers.show_menu_by_diet(ctx, user, entities);
   }
 };
 
@@ -62,68 +84,23 @@ bot.hears(/.?/i, ctx => {
     try {
       return dispatchIntent(result, ctx);
     }
-    catch (error) {}
+    catch (error) {
+      console.log(error);
+    }
   });
 });
 
-// greeting
-// bot.hears(/(hi|hello|hey).?$/i, handlers.greeting);
 
-// try_again
-bot.command('gibberish', handlers.try_again);
-
-// mensas_list
-bot.command('list', ctx => {
-  var user = getUser(ctx);
-  return handlers.mensa_list(ctx, user);
-});
 
 bot.on('location', ctx => {
   var user = getUser(ctx);
   return handlers.set_location(ctx, user);
 });
 
-// mensa_nearest
-// recalculate in case the user locaiton has changed
-bot.command('nearest', ctx => {
-  var user = getUser(ctx);
-  return handlers.nearest(ctx, user);
-});
-
-// mensa_address
-bot.command('address', ctx => {
-  var user = getUser(ctx);
-  return handlers.show_address(ctx, user);
-});
-
-bot.command('set_mensa', ctx => {
-  var user = getUser(ctx);
-  return handlers.select_mensa(ctx, user);
-});
-
 bot.action(/^setmensa:(\d+)/, (ctx) => {
   var user = getUser(ctx);
   return handlers.set_mensa_id(ctx, user);
 });
-
-// menu_all
-// menu_main
-// menu_salad
-// menu_soup
-
-bot.command('menu', ctx => {
-  var user = getUser(ctx);
-  return handlers.show_menu(ctx, user);
-});
-
-// is_open
-// hours_open
-// hours_close
-bot.command('hours', ctx => {
-  var user = getUser(ctx);
-  return handlers.show_hours(ctx, user);
-});
-
 
 // diet_set
 // diet_unset

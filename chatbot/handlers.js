@@ -97,27 +97,44 @@ const setLocation = (ctx, user) => {
   return ctx.reply(MESSAGES.LOCATION_SET);
 };
 
-const showSelectedMensa = (ctx, user) => {
-  var mensaId = user.mensaId;
+const showSelectedMensa = (ctx, user, entities) => {
+  var queryMensaId = helpers.getMensaId(entities);
+  var mensaId = queryMensaId || user.mensaId;
+  console.log(mensaId);
   if (!mensaId) {
     return selectMensa(ctx, user);
   }
   return getMensas(user).then(mensas => {
     var mensa = _.find(mensas, { id: mensaId });
-    var message = `Your selected Mensa is:\n`;
+    var message = ``;
     message += `*${mensa.name}*\n📍${mensa.address}`;
-    return ctx.replyWithMarkdown(message);
+    return ctx.replyWithMarkdown(message).then(() => {
+      ctx.replyWithLocation(mensa.coordinates[0], mensa.coordinates[1]);
+    });
   });
 };
 
 const selectMensa = (ctx, user, entities) => {
-  var mensaId = Number(_.get(entities, 'mensa_name.stringValue'));
+  var mensaId = helpers.getMensaId(entities);
   if (mensaId) {
     return setMensaId(ctx, user, mensaId);
   }
   return getMensaKeys(user).then(keys => {
     ctx.reply(MESSAGES.MENSA_SELECTION_PROMPT, keys);
   });
+};
+
+const setDiet = (ctx, user, entities) => {
+  var diet = helpers.getDiet(entities);
+  if (!diet || !NOTES.DIETS[diet]) {
+    return ctx.reply('Diet not supported.');
+  }
+  if (diet !== 'none') {
+    user.diet = diet;
+  } else {
+    delete user.diet;
+  }
+  return ctx.reply('Diet set to: ' + diet);
 };
 
 const setMensaId = (ctx, user, mensaId) => {
@@ -128,10 +145,12 @@ const setMensaId = (ctx, user, mensaId) => {
     user.mensaId = mensaId;
     var mensa = _.find(mensas, { id: mensaId });
     if (!mensa) {
-      return;
+      return ctx.reply('Mensa not found.');
     }
     var message = MESSAGES.MENSA_CONFIRMATION + '*' + mensa.name + '*';
-    return ctx.replyWithMarkdown(message);
+    return ctx.replyWithMarkdown(message).then(() => {
+      return showMenu(ctx, user);
+    });
   });
 };
 
@@ -140,20 +159,35 @@ const groupItemsByCategory = items => {
   return _.groupBy(items, 'category');
 };
 
-const getSelectedMensa = (ctx, user) => {
-  if (!user.mensaId) {
+const getSelectedMensa = (ctx, user, mensaId) => {
+  if (!mensaId && !user.mensaId) {
     return selectMensa(ctx, user);
   }
+  mensaId = mensaId || user.mensaId;
   return getMensas(user).then(mensas => {
-    return _.find(mensas, { id: user.mensaId });
+    return _.find(mensas, { id: mensaId });
   });
 };
 
+const filterByDiet = (diet, menu) => {
+  if (!_.isArray(menu)) {
+    return [];
+  }
+  return menu.filter(item => {
+    var notes = item.notes || [];
+    // Notes must contain diet label
+    return _.includes(notes, diet);
+  });
+};
 
-const showMenuItems = (ctx, mensa, menu, date) => {
-  // if (user.diet) {
-  //   menu = filterByDiet(user.diet, menu);
-  // }
+const showMenuItems = (ctx, user, mensa, menu, date) => {
+  if (user.diet) {
+    menu = filterByDiet(user.diet, menu);
+  }
+  if (_.isEmpty(menu)) {
+    return ctx.reply('Nothing suits you here.');
+  }
+
   menu = groupItemsByCategory(menu);
 
   var mensaName = mensa.name;
@@ -177,34 +211,97 @@ const showMenuItems = (ctx, mensa, menu, date) => {
   return ctx.replyWithMarkdown(formatted);
 };
 
+const showMenuByDiet = (ctx, user, entities) => {
+  var diet = helpers.getDiet(entities) || user.diet;
+  if (!diet) {
+    return listMensas(ctx, user);
+  }
+  // get mensas
+  var userDate = helpers.getDate(entities) || USER_DATE;
+  USER_DATE = userDate;
+  var today = moment().format('YYYY-MM-DD');
+  var date = userDate || today;
+  return getMensas(user).then(mensas => {
+    var readableDate = moment(date).format('dddd, D. MMMM');
+    var message = readableDate + '\n';
+    var requests = [];
+    var menus = {};
+    mensas.forEach(mensa => {
+      var mensaId = mensa.id;
+      var request = dataService.getMenu(mensaId, date).then(menu => {
+        menu = filterByDiet(diet, menu);
+        var menuMessage = '';
+        if (!_.isEmpty(menu)) {
+          menu = groupItemsByCategory(menu);
+          menuMessage += '\n📍' + mensa.name + '\n';
+          var itemCounts = '';
+          dataService.MENU_HEADINGS.forEach(category => {
+            var items = menu[category] || [];
+            var displayedHeading = dataService.MENU_HEADINGS_INDEX[category];
+            if (items.length) {
+              if (category.trim() === "Essen") {
+                items.forEach(item => {
+                  var price = item.prices.students ?
+                    item.prices.students.toFixed(2) + '€' : ' .--';
+                  var line = ' 🥘 ';
+                  line +=  '_' + price + '_' + '\t ';
+                  line += item.name + '\n';
+                  menuMessage += line;
+                });
+              } else {
+                itemCounts += '`' + items.length + '`× ' + displayedHeading + '   ';
+              }
+            }
+          });
+          if (itemCounts) {
+            menuMessage += itemCounts + '\n';
+          }
+        }
+        menus[mensa.id] = menuMessage;
+      });
+      requests.push(request);
+    });
+    return Promise.all(requests).then(() => {
+      var allMenusMessage = mensas.map(mensa => {
+        return menus[mensa.id];
+      });
+      message += _.compact(allMenusMessage).join('');
+      return ctx.replyWithMarkdown(message);
+    });
+  });
+  
+  // 
+  // filter menus
+};
+
+var USER_DATE = false;
 
 const showMenu = (ctx, user, entities) => {
-  var mensaId = Number(_.get(entities, 'mensa_name.stringValue'));
-  // Temporary fix...
+  var mensaId = helpers.getMensaId(entities);
   if (mensaId) {
     user.mensaId = mensaId;
   }
+  var userDate = helpers.getDate(entities) || USER_DATE;
+  USER_DATE = userDate;
   return getSelectedMensa(ctx, user).then(mensa => {
     if (!mensa) {
       return;
     }
     var mensaId = mensa.id;
-
-    var dateString = _.get(entities, 'date.stringValue');
-    var userDate = dateString ? moment(dateString).format('YYYY-MM-DD') : null;
     var today = moment().format('YYYY-MM-DD');
     var date = userDate || today;
     return dataService.getMenu(mensaId, date).then(menu => {
       if (!menu) {
         return ctx.reply("No menu to show.");
       }
-      return showMenuItems(ctx, mensa, menu, date);
+      return showMenuItems(ctx, user, mensa, menu, date);
     });
   });
 };
 
-const showHours = (ctx, user) => {
-  return getSelectedMensa(ctx, user).then(mensa => {
+const showHours = (ctx, user, entities, queryType) => {
+  var mensaId = helpers.getMensaId(entities);
+  return getSelectedMensa(ctx, user, mensaId).then(mensa => {
     if (!mensa) {
       return;
     }
@@ -241,7 +338,9 @@ const HANDLERS = {
   show_address: showSelectedMensa,
   select_mensa: selectMensa,
   set_mensa_id: setMensaId,
+  set_diet: setDiet,
   show_menu: showMenu,
+  show_menu_by_diet: showMenuByDiet,
   show_hours: showHours
 };
 
