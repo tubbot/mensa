@@ -71,7 +71,7 @@ app.post('/menu', (req, res) => {
     }
     res.json(menu);
   }
-  catch(error) { console.log(error); }
+  catch (error) { console.log(error); }
   return;
 });
 

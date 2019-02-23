@@ -44,6 +44,11 @@ const initialise = () => {
   return loadMensas().then(() => loadMenus());
 };
 
+const RELOAD_PERIOD = 1000 * 60 * 60 * 12;
+setInterval(() => {
+  initialise();
+}, RELOAD_PERIOD);
+
 DATA.initialise = initialise;
 
 module.exports = DATA;
